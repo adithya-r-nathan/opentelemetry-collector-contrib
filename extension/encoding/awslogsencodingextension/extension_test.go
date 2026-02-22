@@ -125,6 +125,30 @@ func TestNew_ELBAcessLogV1(t *testing.T) {
 	require.NotNil(t, e)
 }
 
+func TestNew_TransitGatewayFlowLog(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Format = constants.FormatTransitGatewayFlowLog
+	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.NoError(t, err)
+	require.NotNil(t, e)
+
+	// plain-text parser silently skips unknown fields and never errors on bad input
+	_, err = e.UnmarshalLogs([]byte("some test input"))
+	require.NoError(t, err)
+}
+
+func TestNew_TransitGatewayFlowLog_ParquetNotImplemented(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Format = constants.FormatTransitGatewayFlowLog
+	cfg.TransitGatewayFlowLogConfig.FileFormat = constants.FileFormatParquet
+	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.NoError(t, err)
+	require.NotNil(t, e)
+
+	_, err = e.UnmarshalLogs([]byte("some test input"))
+	require.ErrorContains(t, err, `failed to get reader for "tgwflow" logs`)
+}
+
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)
@@ -158,11 +182,18 @@ func TestGetReaderFromFormat(t *testing.T) {
 			format: constants.FormatS3AccessLog,
 			buf:    []byte("valid"),
 		},
+		"tgw_plain_text_reader": {
+			format: constants.FormatTransitGatewayFlowLog,
+			buf:    []byte("version account-id tgw-id\n6 123456789012 tgw-0abc1234"),
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			e := &encodingExtension{format: test.format}
+			e := &encodingExtension{
+				format: test.format,
+				cfg:    createDefaultConfig().(*Config),
+			}
 			_, reader, err := e.getReaderFromFormat(test.buf)
 			require.NoError(t, err)
 			require.NotNil(t, reader)
@@ -170,8 +201,6 @@ func TestGetReaderFromFormat(t *testing.T) {
 	}
 }
 
-// readAndCompressLogFile reads the data inside it, compresses it
-// and returns a GZIP reader for it.
 func readAndCompressLogFile(t *testing.T, file string) []byte {
 	data, err := os.ReadFile(file)
 	require.NoError(t, err)
@@ -185,9 +214,6 @@ func readAndCompressLogFile(t *testing.T, file string) []byte {
 }
 
 func TestConcurrentGzipReaderUsage(t *testing.T) {
-	// Create an encoding extension for cloudwatch format to test the
-	// gzip reader and check that it works as expected for non concurrent
-	// and concurrent usage
 	ext := &encodingExtension{
 		unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(component.BuildInfo{}),
 		format:      constants.FormatCloudWatchLogsSubscriptionFilter,

@@ -25,6 +25,7 @@ import (
 	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
+	tgwflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/tgw-flow-log"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/waf"
 )
@@ -85,7 +86,6 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 				zap.String("new_format", string(constants.FormatVPCFlowLog)),
 			)
 		}
-
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig,
 			settings.BuildInfo,
@@ -151,10 +151,18 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatNetworkFirewallLog,
 		}, nil
+	case constants.FormatTransitGatewayFlowLog:
+		unmarshaler, err := tgwflowlog.NewTGWFlowLogUnmarshaler(
+			cfg.TransitGatewayFlowLogConfig,
+			settings.BuildInfo,
+			settings.Logger,
+		)
+		return &encodingExtension{
+			cfg:         cfg,
+			unmarshaler: unmarshaler,
+			format:      constants.FormatTransitGatewayFlowLog,
+		}, err
 	default:
-		// Format will have been validated by Config.Validate,
-		// so we'll only get here if we haven't handled a valid
-		// format.
 		return nil, fmt.Errorf("unimplemented format %q", cfg.Format)
 	}
 }
@@ -215,7 +223,6 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 		case constants.FileFormatPlainText:
 			return e.getReaderForData(buf)
 		default:
-			// should not be possible
 			return "", nil, fmt.Errorf(
 				"unsupported file fileFormat %q for VPC flow log, expected one of %q",
 				e.cfg.VPCFlowLogConfig.FileFormat,
@@ -223,8 +230,25 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 			)
 		}
 
+	case constants.FormatTransitGatewayFlowLog:
+		fileFormat := e.cfg.TransitGatewayFlowLogConfig.FileFormat
+		if fileFormat == "" {
+			fileFormat = constants.FileFormatPlainText
+		}
+		switch fileFormat {
+		case constants.FileFormatParquet:
+			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", constants.FileFormatParquet)
+		case constants.FileFormatPlainText:
+			return e.getReaderForData(buf)
+		default:
+			return "", nil, fmt.Errorf(
+				"unsupported file format %q for Transit Gateway flow log, expected one of %q",
+				fileFormat,
+				supportedTGWFlowLogFileFormat,
+			)
+		}
+
 	default:
-		// should not be possible
 		return "", nil, fmt.Errorf("unimplemented: format %q has no reader", e.format)
 	}
 }
