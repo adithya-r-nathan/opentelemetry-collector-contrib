@@ -200,6 +200,7 @@ func TestGetReaderFromFormat(t *testing.T) {
 		})
 	}
 }
+
 // readAndCompressLogFile reads the data inside it, compresses it
 // and returns a GZIP reader for it.
 func readAndCompressLogFile(t *testing.T, file string) []byte {

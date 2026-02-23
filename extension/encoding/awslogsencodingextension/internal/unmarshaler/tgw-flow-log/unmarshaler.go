@@ -4,12 +4,14 @@
 package tgwflowlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/tgw-flow-log"
 
 import (
-	"fmt"
+	"errors"
 	"io"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 // Config defines the configuration for Transit Gateway flow log unmarshaling.
@@ -28,7 +30,7 @@ type tgwFlowLogUnmarshaler struct {
 }
 
 // NewTGWFlowLogUnmarshaler creates a new unmarshaler for Transit Gateway flow logs.
-func NewTGWFlowLogUnmarshaler(cfg Config, buildInfo component.BuildInfo, logger *zap.Logger) (*tgwFlowLogUnmarshaler, error) {
+func NewTGWFlowLogUnmarshaler(cfg Config, buildInfo component.BuildInfo, logger *zap.Logger) (awsunmarshaler.AWSUnmarshaler, error) {
 	fileFormat := cfg.FileFormat
 	if fileFormat == "" {
 		fileFormat = "plain-text"
@@ -46,8 +48,8 @@ func (u *tgwFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, e
 	case "plain-text":
 		return unmarshalPlainText(reader, u.buildInfo)
 	case "parquet":
-		return plog.Logs{}, fmt.Errorf("parquet format not yet supported for Transit Gateway flow logs")
+		return plog.Logs{}, errors.New("parquet format not yet supported for Transit Gateway flow logs")
 	default:
-		return plog.Logs{}, fmt.Errorf("unsupported file format %q", u.fileFormat)
+		return plog.Logs{}, errors.New("unsupported file format " + u.fileFormat)
 	}
 }
