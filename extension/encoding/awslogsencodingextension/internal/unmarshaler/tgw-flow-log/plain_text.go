@@ -23,7 +23,6 @@ import (
 // See https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
 
 func unmarshalPlainText(reader io.Reader, buildInfo component.BuildInfo) (plog.Logs, error) {
-
 	ld := plog.NewLogs()
 
 	rl := ld.ResourceLogs().AppendEmpty()
@@ -41,9 +40,7 @@ func unmarshalPlainText(reader io.Reader, buildInfo component.BuildInfo) (plog.L
 	// First line is the header.
 
 	if !scanner.Scan() {
-
 		return ld, scanner.Err()
-
 	}
 
 	fields := strings.Fields(scanner.Text())
@@ -53,9 +50,7 @@ func unmarshalPlainText(reader io.Reader, buildInfo component.BuildInfo) (plog.L
 		line := scanner.Text()
 
 		if strings.TrimSpace(line) == "" {
-
 			continue
-
 		}
 
 		lr := sl.LogRecords().AppendEmpty()
@@ -65,7 +60,6 @@ func unmarshalPlainText(reader io.Reader, buildInfo component.BuildInfo) (plog.L
 	}
 
 	return ld, scanner.Err()
-
 }
 
 // parseRecord maps a single TGW flow log line onto a LogRecord.
@@ -73,15 +67,12 @@ func unmarshalPlainText(reader io.Reader, buildInfo component.BuildInfo) (plog.L
 // Uses strings.Cut for performance, consistent with the VPC flow log parser.
 
 func parseRecord(fields []string, line string, lr plog.LogRecord) {
-
 	attrs := lr.Attributes()
 
 	for _, field := range fields {
 
 		if line == "" {
-
 			break
-
 		}
 
 		var value string
@@ -91,9 +82,7 @@ func parseRecord(fields []string, line string, lr plog.LogRecord) {
 		// AWS uses "-" for not-applicable or missing fields; skip them.
 
 		if value == "-" {
-
 			continue
-
 		}
 
 		switch field {
@@ -111,9 +100,7 @@ func parseRecord(fields []string, line string, lr plog.LogRecord) {
 		default:
 
 			if otelKey, ok := tgwFieldMap[field]; ok {
-
 				attrs.PutStr(otelKey, value)
-
 			}
 
 			// Unknown/future fields are silently ignored for forward compatibility.
@@ -121,21 +108,17 @@ func parseRecord(fields []string, line string, lr plog.LogRecord) {
 		}
 
 	}
-
 }
 
 // setTimestampFromUnix converts a Unix epoch string (seconds) to a pcommon.Timestamp.
 
 func setTimestampFromUnix(value string, lr plog.LogRecord) {
-
 	var ts int64
 
 	for _, c := range value {
 
 		if c < '0' || c > '9' {
-
 			return
-
 		}
 
 		ts = ts*10 + int64(c-'0')
@@ -143,5 +126,4 @@ func setTimestampFromUnix(value string, lr plog.LogRecord) {
 	}
 
 	lr.SetTimestamp(pcommon.Timestamp(ts * 1_000_000_000))
-
 }

@@ -22,7 +22,6 @@ import (
 )
 
 func compressToGZIPReader(t *testing.T, buf []byte) io.Reader {
-
 	var compressedData bytes.Buffer
 
 	gzipWriter := gzip.NewWriter(&compressedData)
@@ -40,31 +39,25 @@ func compressToGZIPReader(t *testing.T, buf []byte) io.Reader {
 	require.NoError(t, err)
 
 	return gzipReader
-
 }
 
 func readAndCompressLogFile(t *testing.T, dir, file string) io.Reader {
-
 	data, err := os.ReadFile(filepath.Join(dir, file))
 
 	require.NoError(t, err)
 
 	return compressToGZIPReader(t, data)
-
 }
 
 func readLogFile(t *testing.T, dir, file string) io.Reader {
-
 	data, err := os.ReadFile(filepath.Join(dir, file))
 
 	require.NoError(t, err)
 
 	return bytes.NewReader(data)
-
 }
 
 func TestUnmarshalLogs_PlainText(t *testing.T) {
-
 	t.Parallel()
 
 	dir := "testdata"
@@ -78,9 +71,7 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 
 		expectedErr string
 	}{
-
 		{
-
 			name: "Valid TGW flow log - single log",
 
 			logInputReader: readAndCompressLogFile(t, dir, "valid_tgw_flow_log_single.log"),
@@ -89,7 +80,6 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		},
 
 		{
-
 			name: "Valid TGW flow log - multi logs",
 
 			logInputReader: readAndCompressLogFile(t, dir, "valid_tgw_flow_log_multi.log"),
@@ -98,7 +88,6 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		},
 
 		{
-
 			name: "Valid TGW flow log uncompressed",
 
 			logInputReader: readLogFile(t, dir, "valid_tgw_flow_log_single.log"),
@@ -107,7 +96,6 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		},
 
 		{
-
 			name: "Empty input",
 
 			logInputReader: bytes.NewReader([]byte{}),
@@ -117,9 +105,7 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 	}
 
 	for _, test := range tests {
-
 		t.Run(test.name, func(t *testing.T) {
-
 			u, err := NewTGWFlowLogUnmarshaler(
 
 				Config{FileFormat: constants.FileFormatPlainText},
@@ -152,9 +138,6 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
-
 		})
-
 	}
-
 }
