@@ -200,7 +200,8 @@ func TestGetReaderFromFormat(t *testing.T) {
 		})
 	}
 }
-
+// readAndCompressLogFile reads the data inside it, compresses it
+// and returns a GZIP reader for it.
 func readAndCompressLogFile(t *testing.T, file string) []byte {
 	data, err := os.ReadFile(file)
 	require.NoError(t, err)
@@ -214,6 +215,9 @@ func readAndCompressLogFile(t *testing.T, file string) []byte {
 }
 
 func TestConcurrentGzipReaderUsage(t *testing.T) {
+	// Create an encoding extension for cloudwatch format to test the
+	// gzip reader and check that it works as expected for non concurrent
+	// and concurrent usage
 	ext := &encodingExtension{
 		unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(component.BuildInfo{}),
 		format:      constants.FormatCloudWatchLogsSubscriptionFilter,
