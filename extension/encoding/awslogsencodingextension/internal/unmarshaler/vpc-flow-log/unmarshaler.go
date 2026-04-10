@@ -97,11 +97,15 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 		fields = strings.Split(firstLine, " ")
 	}
 
+	// Detect if this is a Transit Gateway flow log by checking the second field
+	// TGW flow logs have "TransitGateway" as the second field (account-id position)
+	isTGWFlowLog := len(fields) > 1 && fields[1] == "TransitGateway"
+
 	logs, resourceLogs, scopeLogs := v.createLogs()
 	key := &resourceKey{}
 	for scanner.Scan() {
 		line := scanner.Text()
-		if err := v.addToLogs(key, scopeLogs, fields, line); err != nil {
+		if err := v.addToLogs(key, scopeLogs, fields, line, isTGWFlowLog); err != nil {
 			return plog.Logs{}, err
 		}
 	}
@@ -158,6 +162,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 	scopeLogs plog.ScopeLogs,
 	fields []string,
 	logLine string,
+	isTGWFlowLog bool,
 ) error {
 	record := plog.NewLogRecord()
 

@@ -147,7 +147,6 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 		case fileFormatPlainText:
 			return e.getReaderForData(buf)
 		default:
-			// should not be possible
 			return "", nil, fmt.Errorf(
 				"unsupported file fileFormat %q for VPC flow log, expected one of %q",
 				e.vpcFormat,
@@ -156,7 +155,6 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 		}
 
 	default:
-		// should not be possible
 		return "", nil, fmt.Errorf("unimplemented: format %q has no reader", e.format)
 	}
 }

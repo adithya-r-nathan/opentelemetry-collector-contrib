@@ -55,6 +55,10 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			reader:               readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
 			logsExpectedFilename: "valid_vpc_flow_log_expected.yaml",
 		},
+		"valid_tgw_flow_log": {
+			reader:               readAndCompressLogFile(t, dir, "valid_tgw_flow_log.log"),
+			logsExpectedFilename: "valid_tgw_flow_log_expected.yaml",
+		},
 		"vpc_flow_log_with_more_fields_than_allowed": {
 			reader:      readAndCompressLogFile(t, dir, "vpc_flow_log_too_few_fields.log"),
 			expectedErr: "log line has less fields than the ones expected",

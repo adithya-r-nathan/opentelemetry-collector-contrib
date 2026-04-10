@@ -15,6 +15,7 @@
 This extension unmarshals logs encoded in formats produced by AWS services, including:
  - [Amazon CloudWatch Logs Subscription Filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html).
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
+   - Includes support for [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html), which use the same VPC flow log format in the default configuration.
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
@@ -47,6 +48,30 @@ extensions:
       # parquet option still needs to be implemented.
       file_format: plain-text 
 ```
+
+**Note**: In the default configuration (plain-text format), the extension automatically detects and handles both regular VPC flow logs and Transit Gateway (TGW) flow logs based on the log structure:
+- **Default behavior**: The extension automatically detects whether logs are VPC or TGW format by examining the header fields
+- **VPC flow logs**: Header is `version account-id interface-id ...`
+- **TGW flow logs**: Header is `version TransitGateway interface-id ...` (note: "TransitGateway" replaces the account-id field)
+
+If you specify custom field definitions, be aware that TGW and VPC flow logs have different field structures and you may need separate configurations for each type.
+
+Example for Transit Gateway (TGW) flow logs:
+```yaml
+extensions:
+  awslogs_encoding/tgw_flow_log:
+    format: vpc_flow_log
+    vpc_flow_log:
+      file_format: plain-text
+```
+
+Sample TGW flow log input:
+```
+version TransitGateway interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
+2 tgw-12345678 eni-0eb1e4178af74336c 10.1.1.100 10.2.2.100 443 80 6 100 50000 1742570089 1742570142 ACCEPT OK
+```
+
+Note: The configuration is identical to VPC flow logs; the extension automatically detects TGW logs from the log structure by checking if the second field is "TransitGateway".
 
 Example for S3 access logs:
 ```yaml
